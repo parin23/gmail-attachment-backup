@@ -110,7 +110,7 @@ Or from Docker Hub:
 docker run --rm -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v $(pwd)/backups:/app/backups \
   -e GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx" \
-  ghcr.io/yourusername/gmail-backup:latest
+  parin23/gmail-attachment-backup
 ```
 
 ## Configuration
