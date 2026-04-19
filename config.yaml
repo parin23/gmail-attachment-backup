@@ -1,0 +1,25 @@
+# Storage type: "s3" or "local"
+storage: local
+
+gmail:
+  email: "design.navsutra@gmail.com"
+  app_password: "${GMAIL_APP_PASSWORD}"
+
+# S3 configuration (used when storage: s3)
+# s3:
+#   endpoint: "https://s3.amazonaws.com"
+#   bucket: "your-backup-bucket"
+#   access_key: "${S3_ACCESS_KEY}"
+#   secret_key: "${S3_SECRET_KEY}"
+#   region: "us-east-1"
+
+# Local storage configuration (used when storage: local)
+local:
+  root_dir: "/opt/gmail_backup/"
+
+backup:
+  folders:
+    - "INBOX"
+    - "SENT"
+    - "Starred"
+  message_limit: 200
