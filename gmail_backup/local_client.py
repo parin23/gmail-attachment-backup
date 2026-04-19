@@ -106,4 +106,4 @@ def build_local_key(
     date_prefix = message_date.strftime("%Y_%m")
     safe_folder = folder.replace("/", "_")
     name,ext = os.path.splitext(filename)
-    return f"{safe_folder}/{date_prefix}/{name}.{attachment_hash[0:3]}.{ext}"
+    return f"{safe_folder}/{date_prefix}/{name}.{attachment_hash[0:3]}{ext}"
