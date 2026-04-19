@@ -1,8 +1,7 @@
 import logging
 from datetime import datetime
 from io import BytesIO
-from typing import Generator
-
+import os
 import boto3
 from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
@@ -84,6 +83,7 @@ def build_s3_key(
     filename: str,
     message_date: datetime,
 ) -> str:
-    date_prefix = message_date.strftime("%Y/%m/%d")
+    date_prefix = message_date.strftime("%Y_%m")
     safe_folder = folder.replace("/", "_")
-    return f"{safe_folder}/{date_prefix}/{attachment_hash}/{filename}"
+    name,ext = os.path.splitext(filename)
+    return f"{safe_folder}/{date_prefix}/{name}.{attachment_hash[0:3]}.{ext}"

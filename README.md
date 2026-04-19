@@ -46,13 +46,16 @@ Edit `.env`:
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 ```
 
-### 2. Run with Docker
+### 2. Build & Run
 
 ```bash
-# Build
+# Build the Docker image
 docker build -t gmail-backup .
 
-# Run (DB is stored in backups/.backup_tracker.db)
+# Run with Docker Compose
+docker compose up
+
+# Or run directly
 docker run --rm \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v $(pwd)/backups:/app/backups \
@@ -60,17 +63,138 @@ docker run --rm \
   gmail-backup
 ```
 
-Or use Docker Compose:
-
-```bash
-docker compose run gmail-backup
-```
-
-### 3. Schedule with Cron
+### 3. Schedule with Cron (Linux/macOS)
 
 ```bash
 # Run every 6 hours
-0 */6 * * * docker compose run gmail-backup >> /path/to/backup.log 2>&1
+0 */6 * * * cd /path/to/gmail-attachment-backup && docker compose run gmail-backup >> /path/to/backup.log 2>&1
+
+# Or use docker run directly
+0 */6 * * * docker run --rm \
+  -v /path/to/gmail-attachment-backup/config.yaml:/app/config.yaml:ro \
+  -v /path/to/gmail-attachment-backup/backups:/app/backups \
+  --env-file /path/to/gmail-attachment-backup/.env \
+  gmail-backup >> /path/to/backup.log 2>&1
+```
+
+### 3. Schedule with Task Scheduler (Windows)
+
+**Option A: Using batch file**
+
+1. Create `run-backup.bat`:
+```batch
+@echo off
+docker run --rm -v "%~dp0config.yaml:/app/config.yaml:ro" -v "%~dp0backups:/app/backups" --env-file "%~dp0.env" gmail-backup
+```
+
+2. Open Task Scheduler → Create Task → Configure:
+   - **Trigger**: Daily at selected time, or every 6 hours
+   - **Action**: Start a program
+   - **Program**: `C:\path\to\run-backup.bat`
+   - **Start in**: `C:\path\to\gmail-attachment-backup`
+
+**Option B: Using docker directly in Task Scheduler**
+
+1. Open Task Scheduler → Create Task
+2. **General**:
+   - Name: Gmail Backup
+   - Run whether user is logged on or not
+   - Run with highest privileges (if needed)
+3. **Triggers**: Daily at selected time, or repeat every 6 hours
+4. **Actions**: Start a program
+   ```
+   Program: docker
+   Arguments: run --rm -v "%USERPROFILE%\path\to\config.yaml:/app/config.yaml:ro" -v "%USERPROFILE%\path\to\backups:/app/backups" --env-file "%USERPROFILE%\path\to\.env" gmail-backup
+   ```
+   (Adjust paths as needed)
+5. **Conditions**: Start only if network available (optional)
+6. **Settings**: Run task as soon as possible if missed
+
+**Option C: Using Windows Terminal (Windows 10/11)**
+
+```powershell
+# Run as ScheduledTask with PowerShell
+$action = New-ScheduledTaskAction -Execute 'docker' -Argument 'run --rm -v "C:\path\to\config.yaml:/app/config.yaml:ro" -v "C:\path\to\backups:/app/backups" --env-file "C:\path\to\.env" gmail-backup'
+$trigger = New-ScheduledTaskTrigger -Daily -At 9am
+Register-ScheduledTask -TaskName "GmailBackup" -Action $action -Trigger $trigger -Force
+```
+
+### Schedule with systemd (Linux)
+
+Create `/etc/systemd/system/gmail-backup.service`:
+```ini
+[Unit]
+Description=Gmail Attachment Backup
+
+[Service]
+Type=oneshot
+WorkingDirectory=/path/to/gmail-attachment-backup
+ExecStart=/usr/bin/docker compose run gmail-backup
+```
+
+Create `/etc/systemd/system/gmail-backup.timer`:
+```ini
+[Unit]
+Description=Run Gmail Backup every 6 hours
+
+[Timer]
+OnCalendar=*:0/6
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable:
+```bash
+sudo systemctl enable gmail-backup.timer
+sudo systemctl start gmail-backup.timer
+```
+
+## Docker Usage
+
+### Build Image
+
+```bash
+docker build -t gmail-backup .
+```
+
+### Run from Built Image
+
+```bash
+docker run --rm \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  -v $(pwd)/backups:/app/backups \
+  --env-file .env \
+  gmail-backup
+```
+
+### Run from Docker Hub (No Build Required)
+
+```bash
+docker run --rm \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  -v $(pwd)/backups:/app/backups \
+  -e GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx" \
+  ghcr.io/yourusername/gmail-backup:latest
+```
+
+Note: Replace the image URL with your published image path.
+
+### Docker Compose
+
+```bash
+# Build and run
+docker compose up
+
+# Run only (use existing build)
+docker compose run gmail-backup
+
+# View logs
+docker compose logs -f
+
+# Stop
+docker compose down
 ```
 
 ## Configuration
@@ -88,6 +212,7 @@ local:
 Directory structure:
 ```
 backups/
+├── .backup_tracker.db    # SQLite database (auto-created)
 ├── INBOX/
 │   └── 2024/
 │       └── 03/
@@ -154,7 +279,7 @@ GMAIL_APP_PASSWORD="xxxx" python -m gmail_backup.backup
 ### Permission Denied
 
 ```bash
-chmod -R 777 backups backup_tracker.db
+chmod -R 777 backups
 ```
 
 ### View Logs
@@ -162,6 +287,10 @@ chmod -R 777 backups backup_tracker.db
 ```bash
 docker compose logs -f
 ```
+
+### First Run Creates Database
+
+On first run, the database file `backups/.backup_tracker.db` is created automatically. Subsequent runs will use the existing database.
 
 ## Environment Variables
 
@@ -175,8 +304,9 @@ docker compose logs -f
 
 | File | Description |
 |------|-------------|
-| `backups/` | Local backup storage (including hidden `.backup_tracker.db`) |
+| `backups/` | Local backup storage (including `.backup_tracker.db`) |
 | `.env` | Your credentials (never commit this) |
+| `config.yaml` | Configuration (edit before running) |
 
 ## Security Notes
 
