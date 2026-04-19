@@ -9,6 +9,7 @@ __pycache__/
 # Backup Folders
 *.db
 .idea
+backups/
 
 # Distribution / packaging
 .Python

@@ -1,0 +1,11 @@
+services:
+  gmail-backup:
+    build: .
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./backups:/app/backups
+    env_file:
+      - .env
+    restart: on-failure
+    # To run manually: docker compose run gmail-backup
+    # For cron: Add to crontab: docker compose run gmail-backup

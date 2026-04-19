@@ -15,7 +15,7 @@ gmail:
 
 # Local storage configuration (used when storage: local)
 local:
-  root_dir: "/opt/gmail_backup/"
+  root_dir: "/app/backups/" # for Docker volume  # Change for Non Docker use
 
 backup:
   folders:

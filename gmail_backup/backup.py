@@ -32,7 +32,7 @@ class BackupResult:
 class BackupOrchestrator:
     def __init__(self, config: Config, db_path: str | Path | None = None):
         self.config = config
-        self.db_path = db_path or Path.cwd() / "backup_tracker.db"
+        self.db_path = db_path or Path("/app/backups/.backup_tracker.db")
         self.storage = self._create_storage()
 
         self.gmail = GmailClient(config.get_gmail().email, config.get_gmail().app_password)
